@@ -1,0 +1,54 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="function.js"></script>
+    <title>ESP-NOW Window/Door Sensor</title>
+</head>
+
+<body onload="load();">
+    <form class="box">
+        <h1>ESP-NOW Window/Door Sensor </h1>
+        <div class="wrapper">
+            <p class="text">Firmware:</p>
+            <p class="text" id="version"></p>
+            <input id="firmware" value="{{firmware}}" hidden />
+        </div>
+
+        <div class="wrapper">
+            <p class="text">Sensor name:</p>
+            <input id="deviceSensorName" value="{{deviceSensorName}}" placeholder="Name" autocomplete="off" label
+                title="ESP-NOW device name (up to 150 characters)" />
+        </div>
+
+        <div class="wrapper">
+            <p class="text">Battery name:</p>
+            <input id="deviceBatteryName" value="{{deviceBatteryName}}" placeholder="Name" autocomplete="off" label
+                title="ESP-NOW device name (up to 150 characters)" />
+        </div>
+
+        <div class="wrapper">
+            <p class="text">ESP-NOW network name:</p>
+            <input id="espnowNetName" value="{{espnowNetName}}" placeholder="Name" autocomplete="off" label
+                title="ESP-NOW network name (1 to 20 characters)" />
+        </div>
+
+        <div class="wrapper">
+            <p class="text-select">Sensor type:</p>
+            <input id="deviceSensorClass" value="{{deviceSensorClass}}" hidden />
+            <p><select id="deviceSensorClassSelect">
+                    <option value="28">WINDOW</option>
+                    <option value="6">DOOR</option>
+                </select></p>
+        </div>
+
+        <div class="wrapper">
+            <input class="btn" type="submit" value="Save" onclick="saveSetting(this);">
+            <input class="btn" type="submit" value="Restart" onclick="restart(this);">
+        </div>
+    </form>
+</body>
+
+</html>
