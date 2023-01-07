@@ -147,6 +147,7 @@ void onConfirmReceiving(const uint8_t *target, const bool status)
   {
     Serial.write(confirmationMessage, sizeof(confirmationMessage));
     Serial.flush();
+    ESP.deepSleep(0);
   }
 }
 
