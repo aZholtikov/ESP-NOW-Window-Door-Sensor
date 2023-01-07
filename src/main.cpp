@@ -23,8 +23,8 @@ uint8_t deviceSensorClass{HABSDC_WINDOW};
 String deviceBatteryName{"ESP-NOW window sensor battery"};
 
 char receivedBytes[128]{0};
-byte counter{0};
-byte messageLenght{0};
+uint8_t counter{0};
+uint8_t messageLenght{0};
 bool dataReceiving{false};
 bool dataReceived{false};
 bool semaphore{false};
