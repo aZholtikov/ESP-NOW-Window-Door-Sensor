@@ -14,13 +14,16 @@ void sendSensorConfigMessage(void);
 void sendBatteryConfigMessage(void);
 void sendAttributesMessage(void);
 
-const String firmware{"1.0"};
+const String firmware{"1.1"};
 
 String espnowNetName{"DEFAULT"};
 
 String deviceSensorName{"ESP-NOW window sensor"};
 uint8_t deviceSensorClass{HABSDC_WINDOW};
 String deviceBatteryName{"ESP-NOW window sensor battery"};
+
+String sensorStatus{""};
+String batteryStatus{""};
 
 char receivedBytes[128]{0};
 uint8_t counter{0};
@@ -48,6 +51,9 @@ void setup()
   SPIFFS.begin();
 
   loadConfig();
+
+  json["state"] = sensorStatus;
+  json["battery"] = batteryStatus;
 
   myNet.begin(espnowNetName.c_str());
 
@@ -104,6 +110,7 @@ void loop()
       Serial.flush();
       Serial.end();
       dataReceived = false;
+      WiFi.mode(WIFI_AP);
       WiFi.softAP(("ESP-NOW Window " + myNet.getNodeMac()).c_str(), "12345678", 1, 0);
       setupWebServer();
       ArduinoOTA.begin();
@@ -113,22 +120,42 @@ void loop()
       if (receivedBytes[7] == 0x01)
       {
         if (receivedBytes[17] == 0x02)
+        {
           json["battery"] = "HIGH";
+          batteryStatus = "HIGH";
+        }
         if (receivedBytes[17] == 0x01)
+        {
           json["battery"] = "MID";
+          batteryStatus = "MID";
+        }
         if (receivedBytes[17] == 0x00)
+        {
           json["battery"] = "LOW";
+          batteryStatus = "LOW";
+        }
         dataReceived = false;
-        Serial.write(confirmationMessage, sizeof(confirmationMessage));
-        Serial.flush();
+        saveConfig();
+        serializeJsonPretty(json, buffer);
+        memcpy(outgoingData.message, buffer, sizeof(esp_now_payload_data_t::message));
+        memcpy(temp, &outgoingData, sizeof(esp_now_payload_data_t));
+        myNet.sendBroadcastMessage(temp);
+        semaphore = true;
       }
       if (receivedBytes[7] == 0x02)
       {
         if (receivedBytes[17] == 0x01)
+        {
           json["state"] = "OPEN";
+          sensorStatus = "OPEN";
+        }
         if (receivedBytes[17] == 0x00)
+        {
           json["state"] = "CLOSED";
+          sensorStatus = "CLOSED";
+        }
         dataReceived = false;
+        saveConfig();
         serializeJsonPretty(json, buffer);
         memcpy(outgoingData.message, buffer, sizeof(esp_now_payload_data_t::message));
         memcpy(temp, &outgoingData, sizeof(esp_now_payload_data_t));
@@ -147,7 +174,6 @@ void onConfirmReceiving(const uint8_t *target, const bool status)
   {
     Serial.write(confirmationMessage, sizeof(confirmationMessage));
     Serial.flush();
-    ESP.deepSleep(0);
   }
 }
 
@@ -157,23 +183,27 @@ void loadConfig()
     saveConfig();
   File file = SPIFFS.open("/config.json", "r");
   String jsonFile = file.readString();
-  StaticJsonDocument<512> json;
+  StaticJsonDocument<1024> json;
   deserializeJson(json, jsonFile);
   espnowNetName = json["espnowNetName"].as<String>();
   deviceSensorName = json["deviceSensorName"].as<String>();
   deviceBatteryName = json["deviceBatteryName"].as<String>();
   deviceSensorClass = json["deviceSensorClass"];
+  sensorStatus = json["sensorStatus"].as<String>();
+  batteryStatus = json["batteryStatus"].as<String>();
   file.close();
 }
 
 void saveConfig()
 {
-  StaticJsonDocument<512> json;
+  StaticJsonDocument<1024> json;
   json["firmware"] = firmware;
   json["espnowNetName"] = espnowNetName;
   json["deviceSensorName"] = deviceSensorName;
   json["deviceBatteryName"] = deviceBatteryName;
   json["deviceSensorClass"] = deviceSensorClass;
+  json["sensorStatus"] = sensorStatus;
+  json["batteryStatus"] = batteryStatus;
   json["system"] = "empty";
   File file = SPIFFS.open("/config.json", "w");
   serializeJsonPretty(json, file);

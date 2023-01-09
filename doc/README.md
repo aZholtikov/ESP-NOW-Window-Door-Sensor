@@ -18,7 +18,7 @@ Communication protocol used in the firmware (only necessary "cuts" from the orig
       Module returns          55 AA 00 08 00 01 00 08                                     (Confirmation message)
       Module power off
 
-2. Sending the battery status. Pressing the button. Not used in the firmware.
+2. Sending the battery status. Pressing the button.
 
       Module power is on
       Module sends            55 AA 00 01 00 00 00                                        (Initial message)
