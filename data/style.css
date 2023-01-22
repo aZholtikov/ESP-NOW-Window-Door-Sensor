@@ -1,3 +1,7 @@
+p{
+    margin: 0 0;
+}
+
 body {
     font-family: "Gill Sans", sans-serif;
     background: rgb(255, 255, 255);
@@ -21,13 +25,15 @@ h1 {
     font-weight: 600;
     flex-shrink: 0;
     margin-right: 10px;
+    margin-left: 10px;
+    margin: 10px 0;
 }
 
 .text-select {
     width: 35%;
     font-weight: 600;
     flex-shrink: 0;
-    margin-right: 10px;
+    margin-right: 10px; 
 }
 
 .wrapper {
@@ -42,6 +48,7 @@ input {
     border-radius: 5px;
     border: none;
     margin-bottom: 10px;
+    margin-left: 10px;
     padding: 0 10px;
     color: rgb(0, 0, 0);
     background: #a3e0f1;
@@ -76,6 +83,8 @@ select:hover {
     background: rgb(65, 125, 238);
     color: white;
     transition: .5s;
+    margin-left: 0;
+    margin-top: 8px;
 }
 
 .btn:hover {
@@ -84,10 +93,13 @@ select:hover {
     transform: translatey(-3px);
 }
 
-#deviceSensorName,
-#deviceBatteryName,
+#deviceName,
 #espnowNetName {
-    width: 73%;
+    width: 100%;
+}
+
+#espnowNetName {
+    margin-bottom: 15px;
 }
 
 .wrapper.wrapper--end {

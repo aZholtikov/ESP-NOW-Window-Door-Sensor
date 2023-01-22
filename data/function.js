@@ -29,7 +29,7 @@ function loadBlock() {
     }
     document.getElementsByTagName('body')[0].innerHTML = newString;
     setFirmvareValue('version', 'firmware');
-    setGpioValue('deviceSensorClassSelect', 'deviceSensorClass');
+    setGpioValue('deviceClassSelect', 'deviceClass');
     handleServerResponse();
 }
 
@@ -51,10 +51,9 @@ function sendRequest(submit, server) {
 }
 
 function saveSetting(submit) {
-    server = "/setting?deviceSensorName=" + getValue('deviceSensorName')
-        + "&deviceBatteryName=" + getValue('deviceBatteryName')
+    server = "/setting?deviceName=" + getValue('deviceName')
         + "&espnowNetName=" + getValue('espnowNetName')
-        + "&deviceSensorClass=" + getSelectValue('deviceSensorClassSelect');
+        + "&deviceClass=" + getSelectValue('deviceClassSelect');
     sendRequest(submit, server);
     alert("Please restart device for changes apply.");
 }

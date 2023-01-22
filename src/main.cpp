@@ -4,7 +4,7 @@
 #include "ZHNetwork.h"
 #include "ZHConfig.h"
 
-void onConfirmReceiving(const uint8_t *target, const bool status);
+void onConfirmReceiving(const uint8_t *target, const uint16_t id, const bool status);
 
 void loadConfig(void);
 void saveConfig(void);
@@ -14,13 +14,12 @@ void sendSensorConfigMessage(void);
 void sendBatteryConfigMessage(void);
 void sendAttributesMessage(void);
 
-const String firmware{"1.1"};
+const String firmware{"1.2"};
 
 String espnowNetName{"DEFAULT"};
 
-String deviceSensorName{"ESP-NOW window sensor"};
-uint8_t deviceSensorClass{HABSDC_WINDOW};
-String deviceBatteryName{"ESP-NOW window sensor battery"};
+String deviceName = "ESP-NOW window " + String(ESP.getChipId(), HEX);
+uint8_t deviceClass{HABSDC_WINDOW};
 
 String sensorStatus{""};
 String batteryStatus{""};
@@ -34,7 +33,6 @@ bool semaphore{false};
 
 esp_now_payload_data_t outgoingData{ENDT_SENSOR, ENPT_STATE};
 StaticJsonDocument<sizeof(esp_now_payload_data_t::message)> json;
-char buffer[sizeof(esp_now_payload_data_t::message)]{0};
 char temp[sizeof(esp_now_payload_data_t)]{0};
 const char initialMessage[] = {0x55, 0xAA, 0x00, 0x01, 0x00, 0x00, 0x00};
 const char connectedMessage[] = {0x55, 0xAA, 0x00, 0x02, 0x00, 0x01, 0x04, 0x06};
@@ -56,6 +54,7 @@ void setup()
   json["battery"] = batteryStatus;
 
   myNet.begin(espnowNetName.c_str());
+  // myNet.setCryptKey("VERY_LONG_CRYPT_KEY"); // If encryption is used, the key must be set same of all another ESP-NOW devices in network.
 
   myNet.setOnConfirmReceivingCallback(onConfirmReceiving);
 
@@ -111,7 +110,7 @@ void loop()
       Serial.end();
       dataReceived = false;
       WiFi.mode(WIFI_AP);
-      WiFi.softAP(("ESP-NOW Window " + myNet.getNodeMac()).c_str(), "12345678", 1, 0);
+      WiFi.softAP(("ESP-NOW window " + String(ESP.getChipId(), HEX)).c_str(), "12345678", 1, 0);
       setupWebServer();
       ArduinoOTA.begin();
     }
@@ -136,9 +135,8 @@ void loop()
         }
         dataReceived = false;
         saveConfig();
-        serializeJsonPretty(json, buffer);
-        memcpy(outgoingData.message, buffer, sizeof(esp_now_payload_data_t::message));
-        memcpy(temp, &outgoingData, sizeof(esp_now_payload_data_t));
+        serializeJsonPretty(json, outgoingData.message);
+        memcpy(&temp, &outgoingData, sizeof(esp_now_payload_data_t));
         myNet.sendBroadcastMessage(temp);
         semaphore = true;
       }
@@ -156,9 +154,8 @@ void loop()
         }
         dataReceived = false;
         saveConfig();
-        serializeJsonPretty(json, buffer);
-        memcpy(outgoingData.message, buffer, sizeof(esp_now_payload_data_t::message));
-        memcpy(temp, &outgoingData, sizeof(esp_now_payload_data_t));
+        serializeJsonPretty(json, outgoingData.message);
+        memcpy(&temp, &outgoingData, sizeof(esp_now_payload_data_t));
         myNet.sendBroadcastMessage(temp);
         semaphore = true;
       }
@@ -168,7 +165,7 @@ void loop()
   ArduinoOTA.handle();
 }
 
-void onConfirmReceiving(const uint8_t *target, const bool status)
+void onConfirmReceiving(const uint8_t *target, const uint16_t id, const bool status)
 {
   if (semaphore)
   {
@@ -186,9 +183,8 @@ void loadConfig()
   StaticJsonDocument<1024> json;
   deserializeJson(json, jsonFile);
   espnowNetName = json["espnowNetName"].as<String>();
-  deviceSensorName = json["deviceSensorName"].as<String>();
-  deviceBatteryName = json["deviceBatteryName"].as<String>();
-  deviceSensorClass = json["deviceSensorClass"];
+  deviceName = json["deviceName"].as<String>();
+  deviceClass = json["deviceClass"];
   sensorStatus = json["sensorStatus"].as<String>();
   batteryStatus = json["batteryStatus"].as<String>();
   file.close();
@@ -199,9 +195,8 @@ void saveConfig()
   StaticJsonDocument<1024> json;
   json["firmware"] = firmware;
   json["espnowNetName"] = espnowNetName;
-  json["deviceSensorName"] = deviceSensorName;
-  json["deviceBatteryName"] = deviceBatteryName;
-  json["deviceSensorClass"] = deviceSensorClass;
+  json["deviceName"] = deviceName;
+  json["deviceClass"] = deviceClass;
   json["sensorStatus"] = sensorStatus;
   json["batteryStatus"] = batteryStatus;
   json["system"] = "empty";
@@ -217,9 +212,8 @@ void setupWebServer()
 
   webServer.on("/setting", HTTP_GET, [](AsyncWebServerRequest *request)
                {
-        deviceSensorName = request->getParam("deviceSensorName")->value();
-        deviceBatteryName = request->getParam("deviceBatteryName")->value();
-        deviceSensorClass = request->getParam("deviceSensorClass")->value().toInt();
+        deviceName = request->getParam("deviceName")->value();
+        deviceClass = request->getParam("deviceClass")->value().toInt();
         espnowNetName = request->getParam("espnowNetName")->value();
         request->send(200);
         saveConfig(); });
@@ -245,10 +239,11 @@ void sendSensorConfigMessage()
 {
   esp_now_payload_data_t outgoingData{ENDT_SENSOR, ENPT_CONFIG};
   StaticJsonDocument<sizeof(esp_now_payload_data_t::message)> json;
-  json["name"] = deviceSensorName;
+  json["name"] = deviceName;
   json["unit"] = 1;
   json["type"] = HACT_BINARY_SENSOR;
-  json["class"] = deviceSensorClass;
+  json["class"] = deviceClass;
+  json["template"] = "state";
   json["payload_on"] = "OPEN";
   json["payload_off"] = "CLOSED";
   char buffer[sizeof(esp_now_payload_data_t::message)]{0};
@@ -263,10 +258,11 @@ void sendBatteryConfigMessage()
 {
   esp_now_payload_data_t outgoingData{ENDT_SENSOR, ENPT_CONFIG};
   StaticJsonDocument<sizeof(esp_now_payload_data_t::message)> json;
-  json["name"] = deviceBatteryName;
+  json["name"] = deviceName + " battery";
   json["unit"] = 2;
   json["type"] = HACT_BINARY_SENSOR;
   json["class"] = HABSDC_BATTERY;
+  json["template"] = "battery";
   json["payload_on"] = "MID";
   json["payload_off"] = "HIGH";
   char buffer[sizeof(esp_now_payload_data_t::message)]{0};
@@ -281,7 +277,7 @@ void sendAttributesMessage()
 {
   esp_now_payload_data_t outgoingData{ENDT_SENSOR, ENPT_ATTRIBUTES};
   StaticJsonDocument<sizeof(esp_now_payload_data_t::message)> json;
-  json["Type"] = "ESP-NOW Window Sensor";
+  json["Type"] = "ESP-NOW window sensor";
   json["MCU"] = "ESP8266";
   json["MAC"] = myNet.getNodeMac();
   json["Firmware"] = firmware;
