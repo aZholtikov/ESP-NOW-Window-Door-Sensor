@@ -20,11 +20,12 @@ void sendAttributesMessage(void);
 
 struct deviceConfig
 {
-  const String firmware{"1.3"};
   String espnowNetName{"DEFAULT"};
   String deviceName = "ESP-NOW window " + String(ESP.getChipId(), HEX);
   uint8_t deviceClass{HABSDC_WINDOW};
 } config;
+
+const String firmware{"1.3"};
 
 char receivedBytes[128]{0};
 uint8_t counter{0};
@@ -201,7 +202,7 @@ void setupWebServer()
                {
         String configJson;
         DynamicJsonDocument json(256); // To calculate the buffer size uses https://arduinojson.org/v6/assistant.
-        json["firmware"] = config.firmware;
+        json["firmware"] = firmware;
         json["espnowNetName"] = config.espnowNetName;
         json["deviceName"] = config.deviceName;
         json["deviceClass"] = config.deviceClass;
@@ -258,7 +259,7 @@ void sendAttributesMessage()
   json["Type"] = "ESP-NOW window sensor";
   json["MCU"] = "ESP8266";
   json["MAC"] = myNet.getNodeMac();
-  json["Firmware"] = config.firmware;
+  json["Firmware"] = firmware;
   json["Library"] = myNet.getFirmwareVersion();
   serializeJsonPretty(json, outgoingData.message);
   char temp[sizeof(esp_now_payload_data_t)]{0};
