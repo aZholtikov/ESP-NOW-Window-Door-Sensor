@@ -4,10 +4,10 @@ ESP-NOW based window/door sensor for ESP8266. Alternate firmware for Tuya/SmartL
 
 ## Features
 
-1. When triggered transmits system information, battery status (HIGH/MID/LOW) and sensor status (OPEN/CLOSED).
+1. When triggered transmits system information, battery level charge and sensor status (OPEN/CLOSED).
 2. Average response time of 1 second (depends on the MCU of the sensor).
 3. In setup/update mode creates an access point named "ESP-NOW window XXXXXXXXXXXX" with password "12345678" (IP 192.168.4.1).
-4. Automatically adds sensor and battery configuration to Home Assistan via MQTT discovery as a binary_sensors (2 different binary_sensor).
+4. Automatically adds sensor and battery configuration to Home Assistan via MQTT discovery as a binary_sensor (for sensor) and sensor (for battery).
 5. Possibility firmware update over OTA (if is allows the size of the flash memory).
 6. Web interface for settings.
   
