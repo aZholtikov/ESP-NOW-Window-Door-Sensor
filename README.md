@@ -29,3 +29,5 @@ See [here](https://github.com/aZholtikov/ESP-NOW-Window-Door-Sensor/tree/main/ha
 5. For using this firmware on Tuya/SmartLife WiFi window/door sensors, the WiFi module must be replaced with an ESP8266 compatible module (if necessary).
 6. Highly recommended connect an external power supply during setup/upgrade.
 7. Because this sensor is battery operated, it has an additional controller (MCU) that controls the power of the WiFi module (Module) and transmits data to it for transmission to the network. The communication is done via UART at 9600 speed. Make sure that the protocol is correct before flashing. Details [here](https://github.com/aZholtikov/ESP-NOW-Window-Door-Sensor/tree/main/doc).
+
+Any feedback via [e-mail](mailto:github@zh.com.ru) would be appreciated. Or... [Buy me a coffee](https://paypal.me/aZholtikov).

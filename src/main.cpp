@@ -29,9 +29,7 @@ const String firmware{"1.3"};
 
 char receivedBytes[128]{0};
 uint8_t counter{0};
-uint8_t messageLenght{0};
-bool dataReceiving{false};
-bool dataReceived{false};
+bool isDataReceived{false};
 bool semaphore{false};
 
 const char initialMessage[] = {0x55, 0xAA, 0x00, 0x01, 0x00, 0x00, 0x00};
@@ -65,57 +63,27 @@ void setup()
 
 void loop()
 {
-  if (Serial.available() > 0 && !dataReceived)
+  if (isDataReceived)
   {
-    char receivedByte[1];
-    Serial.readBytes(receivedByte, 1);
-    if (receivedByte[0] == 0x55)
-    {
-      dataReceiving = true;
-      receivedBytes[counter++] = receivedByte[0];
-      return;
-    }
-    if (dataReceiving)
-    {
-      if (counter == 5)
-        messageLenght = 6 + int(receivedByte[0]);
-      if (counter == messageLenght)
-      {
-        receivedBytes[counter] = receivedByte[0];
-        counter = 0;
-        dataReceiving = false;
-        dataReceived = true;
-        return;
-      }
-      receivedBytes[counter++] = receivedByte[0];
-    }
-  }
-  if (dataReceived)
-  {
-    if (receivedBytes[3] == 0x01) // MCU system information.
+    if (receivedBytes[0] == 0x55 && receivedBytes[3] == 0x01) // MCU system information.
     {
       Serial.write(connectedMessage, sizeof(connectedMessage));
       Serial.flush();
-      dataReceived = false;
     }
-    if (receivedBytes[3] == 0x02) // MCU confirmation message.
-      dataReceived = false;
-    if (receivedBytes[3] == 0x03) // Message for switching to setting mode.
+    if (receivedBytes[0] == 0x55 && receivedBytes[3] == 0x03) // Message for switching to setting mode.
     {
       Serial.write(settingMessage, sizeof(settingMessage));
       Serial.flush();
       Serial.end();
-      dataReceived = false;
       WiFi.mode(WIFI_AP);
       WiFi.softAP(("ESP-NOW window " + String(ESP.getChipId(), HEX)).c_str(), "12345678", 1, 0);
       setupWebServer();
       ArduinoOTA.begin();
     }
-    if (receivedBytes[3] == 0x08) // Sensor status message.
+    if (receivedBytes[0] == 0x55 && receivedBytes[3] == 0x08) // Sensor status message.
     {
       if (receivedBytes[7] == 0x01) // Battery status.
       {
-        dataReceived = false;
         Serial.write(confirmationMessage, sizeof(confirmationMessage));
         Serial.flush();
       }
@@ -128,7 +96,6 @@ void loop()
         if (receivedBytes[17] == 0x00)
           json["state"] = "CLOSED";
         json["battery"] = round((double(system_get_vdd33()) / 1000) * 100) / 100;
-        dataReceived = false;
         serializeJsonPretty(json, outgoingData.message);
         char temp[sizeof(esp_now_payload_data_t)]{0};
         memcpy(&temp, &outgoingData, sizeof(esp_now_payload_data_t));
@@ -136,9 +103,22 @@ void loop()
         semaphore = true;
       }
     }
+    isDataReceived = false;
+    counter = 0;
+    memset(&receivedBytes, 0, 128);
   }
   myNet.maintenance();
   ArduinoOTA.handle();
+}
+
+void serialEvent()
+{
+  while (Serial.available())
+  {
+    receivedBytes[counter++] = Serial.read();
+    delay(2);
+  }
+  isDataReceived = true;
 }
 
 void onConfirmReceiving(const uint8_t *target, const uint16_t id, const bool status)
