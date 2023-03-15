@@ -25,7 +25,7 @@ struct deviceConfig
   uint8_t deviceClass{HABSDC_WINDOW};
 } config;
 
-const String firmware{"1.3"};
+const String firmware{"1.31"};
 
 char receivedBytes[128]{0};
 uint8_t counter{0};
